@@ -699,6 +699,17 @@ body.dark-mode footer {
   transform: none;
 }
 
+.install-btn.installed-btn {
+  background: #676e6c !important;
+  cursor: default !important;
+  opacity: 0.9;
+}
+
+.install-btn.installed-btn:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .install-btn.installing {
   background: #f59e0b;
 }
@@ -721,5 +732,38 @@ body.dark-mode footer {
 .custom-input-group input:focus {
   outline: none;
   border-color: var(--primary-color);
+}
+
+/* Progress Bar */
+.progress-bar {
+  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  height: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar.hidden {
+  display: none;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  width: 0%;
+  transition: width 0.3s ease;
+  border-radius: 8px;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-color);
+  z-index: 1;
 }
 
