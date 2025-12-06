@@ -125,15 +125,21 @@ async function loadAvailableModels() {
           if (result.model && Array.from(modelSelect.options).some(opt => opt.value === result.model)) {
             modelSelect.value = result.model;
           } else if (modelSelect.options.length > 0) {
+            // Use first available model as default
             modelSelect.value = modelSelect.options[0].value;
             chrome.storage.local.set({ model: modelSelect.value });
           }
         });
+      } else {
+        // No models found
+        modelSelect.innerHTML = '<option value="">No models installed - run: ollama pull llama3.2</option>';
       }
+    } else {
+      modelSelect.innerHTML = '<option value="">Cannot connect to Ollama</option>';
     }
   } catch (error) {
     console.error('Failed to load models:', error);
-    // Keep default options if fetch fails
+    modelSelect.innerHTML = '<option value="">Cannot connect to Ollama - is it running?</option>';
   }
 }
 

@@ -2,10 +2,9 @@
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Ollama Web Summarizer installed');
   
-  // Set default settings
+  // Set default URL only - model will be auto-selected from available models
   chrome.storage.local.set({
-    ollamaUrl: 'http://localhost:11434',
-    model: 'llama3.2:latest'
+    ollamaUrl: 'http://localhost:11434'
   });
   
   // Create context menu for selected text
@@ -89,7 +88,7 @@ async function callOllamaAPI(prompt, context = '', onChunk) {
     if (response.status === 403) {
       errorMsg += '\n\n⚠️ CORS Error: Set OLLAMA_ORIGINS="*" environment variable and restart Ollama.';
     } else if (response.status === 404 && errorText.includes('not found')) {
-      errorMsg += `\n\n⚠️ Model not found! Install it with: ollama pull ${model}\nOr select a different model from the dropdown.`;
+      errorMsg += `\n\n⚠️ Model "${model}" not found!\n\nOptions:\n1. Select a different model from the dropdown (shows your installed models)\n2. Install this model: ollama pull ${model}`;
     }
     
     throw new Error(errorMsg);

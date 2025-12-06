@@ -44,7 +44,11 @@ ollama-ext/
 ## Prerequisites
 
 - [Ollama](https://ollama.ai) installed and running locally
-- A model installed (e.g., `llama3.2`, `llama2`, `mistral`)
+- At least one model installed:
+  ```bash
+  ollama pull llama3.2
+  # Or any other model: mistral, qwen2.5, deepseek-r1, etc.
+  ```
 
 ## Quick Install
 
@@ -52,12 +56,17 @@ ollama-ext/
 **Windows:** `[System.Environment]::SetEnvironmentVariable('OLLAMA_ORIGINS', '*', 'User')`  
 **Mac/Linux:** `echo 'export OLLAMA_ORIGINS="*"' >> ~/.bashrc && source ~/.bashrc`
 
-### 2. Start Ollama
+### 2. Install a model (if you haven't already)
+```bash
+ollama pull llama3.2
+```
+
+### 3. Start Ollama
 ```bash
 ollama serve
 ```
 
-### 3. Load extension
+### 4. Load extension
 1. Chrome → `chrome://extensions/` → Enable "Developer mode"
 2. Click "Load unpacked" → Select `ollama-ext` folder
 
