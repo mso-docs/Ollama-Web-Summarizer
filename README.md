@@ -43,15 +43,37 @@ ollama-ext/
 ## Prerequisites
 
 - [Ollama](https://ollama.ai) installed and running locally
-- A model installed (e.g., `llama2`, `mistral`, `phi`)
+- A model installed (e.g., `llama3.2`, `llama2`, `mistral`)
 
-## Installation
+## Quick Start
 
-1. Make sure Ollama is running: `ollama serve`
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" (toggle in top right)
-4. Click "Load unpacked"
-5. Select the `ollama-ext` folder
+### 1. Enable CORS (Required - One-time setup)
+
+**Windows (PowerShell as Administrator):**
+```powershell
+[System.Environment]::SetEnvironmentVariable('OLLAMA_ORIGINS', '*', 'User')
+```
+
+**Mac/Linux:**
+```bash
+echo 'export OLLAMA_ORIGINS="*"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Then restart your terminal and start Ollama:**
+```bash
+ollama serve
+```
+
+> 💡 **Tip**: After this one-time setup, you can always use `ollama serve` normally. No need to use scripts!
+
+### 2. Install the Extension
+
+1. Open Chrome and navigate to `chrome://extensions/`
+2. Enable "Developer mode" (toggle in top right)
+3. Click "Load unpacked"
+4. Select the `ollama-ext` folder
+5. The extension icon appears in your toolbar
 
 ## Usage
 
@@ -66,6 +88,8 @@ You can change the Ollama model in the extension popup. Default is `llama2`.
 
 ## Troubleshooting
 
+- **403 Forbidden Error**: You forgot to set `OLLAMA_ORIGINS` - see step 1 above
 - **Connection Error**: Make sure Ollama is running (`ollama serve`)
-- **CORS Error**: Ollama should allow localhost connections by default
 - **No Summary**: Try refreshing the page and clicking the extension again
+
+For detailed troubleshooting, see [INSTALLATION.md](docs/INSTALLATION.md)
