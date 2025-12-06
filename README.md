@@ -36,7 +36,8 @@ ollama-ext/
 - ✨ **Text selection popup** - Highlight text to summarize, explain, or ask questions
 - 🖱️ **Right-click context menu** - Quick access to AI features on any text
 - ⚡ **Real-time streaming** - See responses as they're generated with "I'm thinking..." indicators
-- 🔄 **Multiple models** - Switch between llama3.2, deepseek-r1, qwen3, and more
+- 🔄 **Auto-detect models** - Automatically loads all your installed Ollama models into the dropdown
+- 🎨 **12 themes** - Customize appearance with light/dark color schemes
 - 🔒 **100% local** - All processing happens on your machine via Ollama
 - 🚀 **No external API calls** - Complete privacy
 
@@ -45,35 +46,22 @@ ollama-ext/
 - [Ollama](https://ollama.ai) installed and running locally
 - A model installed (e.g., `llama3.2`, `llama2`, `mistral`)
 
-## Quick Start
+## Quick Install
 
-### 1. Enable CORS (Required - One-time setup)
+### 1. Set CORS environment variable (one-time)
+**Windows:** `[System.Environment]::SetEnvironmentVariable('OLLAMA_ORIGINS', '*', 'User')`  
+**Mac/Linux:** `echo 'export OLLAMA_ORIGINS="*"' >> ~/.bashrc && source ~/.bashrc`
 
-**Windows (PowerShell as Administrator):**
-```powershell
-[System.Environment]::SetEnvironmentVariable('OLLAMA_ORIGINS', '*', 'User')
-```
-
-**Mac/Linux:**
-```bash
-echo 'export OLLAMA_ORIGINS="*"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-**Then restart your terminal and start Ollama:**
+### 2. Start Ollama
 ```bash
 ollama serve
 ```
 
-> 💡 **Tip**: After this one-time setup, you can always use `ollama serve` normally. No need to use scripts!
+### 3. Load extension
+1. Chrome → `chrome://extensions/` → Enable "Developer mode"
+2. Click "Load unpacked" → Select `ollama-ext` folder
 
-### 2. Install the Extension
-
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" (toggle in top right)
-3. Click "Load unpacked"
-4. Select the `ollama-ext` folder
-5. The extension icon appears in your toolbar
+**📖 For detailed setup instructions, see [INSTALLATION.md](docs/INSTALLATION.md)**
 
 ## Usage
 
@@ -84,12 +72,34 @@ ollama serve
 
 ## Configuration
 
-You can change the Ollama model in the extension popup. Default is `llama2`.
+### Model Selection
+The extension automatically detects all models installed in your Ollama instance by calling the `/api/tags` endpoint. The model dropdown will populate with your available models - no manual configuration needed!
 
-## Troubleshooting
+**How it works:**
+- On startup, the extension queries `http://localhost:11434/api/tags`
+- All installed models (same as `ollama list`) appear in the dropdown
+- Select any model to use it for summarization and chat
+- Your selection is saved for future sessions
 
-- **403 Forbidden Error**: You forgot to set `OLLAMA_ORIGINS` - see step 1 above
-- **Connection Error**: Make sure Ollama is running (`ollama serve`)
-- **No Summary**: Try refreshing the page and clicking the extension again
+**To add more models:**
+```bash
+ollama pull llama3.2
+ollama pull mistral
+ollama pull deepseek-r1
+```
 
-For detailed troubleshooting, see [INSTALLATION.md](docs/INSTALLATION.md)
+Reload the extension and the new models will appear in the dropdown.
+
+### Themes
+Choose from 12 color themes (6 light, 6 dark) in the theme dropdown. Your preference is saved automatically.
+
+## Quick Troubleshooting
+
+| Error | Solution |
+|-------|----------|
+| **403 Forbidden** | Set `OLLAMA_ORIGINS="*"` environment variable (see install step 1) |
+| **404 Model not found** | Run `ollama pull <model-name>` or select different model |
+| **Connection Error** | Start Ollama with `ollama serve` |
+| **Empty model dropdown** | Ensure Ollama is running and has models (`ollama list`) |
+
+**📖 For complete troubleshooting guide, see [INSTALLATION.md](docs/INSTALLATION.md)**
