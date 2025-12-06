@@ -641,6 +641,9 @@ body.dark-mode footer {
   padding: 12px;
   transition: all 0.2s;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  min-height: 160px;
 }
 
 .model-card:hover {
@@ -673,6 +676,7 @@ body.dark-mode footer {
   color: #666;
   margin-bottom: 10px;
   line-height: 1.4;
+  flex: 1;
 }
 
 .install-btn {
@@ -685,6 +689,7 @@ body.dark-mode footer {
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
+  margin-top: auto;
   transition: all 0.2s;
 }
 
@@ -736,12 +741,13 @@ body.dark-mode footer {
 
 /* Progress Bar */
 .progress-bar {
-  margin-top: 8px;
+  margin-bottom: 8px;
   background: rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   height: 24px;
   position: relative;
   overflow: hidden;
+  order: -1;
 }
 
 .progress-bar.hidden {
