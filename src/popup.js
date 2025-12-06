@@ -66,6 +66,12 @@ const chatLoadingIndicator = document.getElementById('chatLoadingIndicator');
 const chatErrorMessage = document.getElementById('chatErrorMessage');
 const statusText = document.getElementById('statusText');
 const modelSelect = document.getElementById('modelSelect');
+const manageModelsBtn = document.getElementById('manageModelsBtn');
+const modelManagerModal = document.getElementById('modelManagerModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const installedModelsList = document.getElementById('installedModelsList');
+const installCustomBtn = document.getElementById('installCustomBtn');
+const customModelInput = document.getElementById('customModelInput');
 
 // Tab switching
 const tabBtns = document.querySelectorAll('.tab-btn');
@@ -441,3 +447,144 @@ function showStatus(message) {
     statusText.textContent = 'Ready';
   }, 3000);
 }
+
+// ========== MODEL MANAGER ==========
+
+// Open model manager modal
+manageModelsBtn.addEventListener('click', () => {
+  modelManagerModal.classList.remove('hidden');
+  loadInstalledModels();
+});
+
+// Close modal
+closeModalBtn.addEventListener('click', () => {
+  modelManagerModal.classList.add('hidden');
+});
+
+// Close modal on background click
+modelManagerModal.addEventListener('click', (e) => {
+  if (e.target === modelManagerModal) {
+    modelManagerModal.classList.add('hidden');
+  }
+});
+
+// Load installed models
+async function loadInstalledModels() {
+  try {
+    const response = await fetch('http://localhost:11434/api/tags');
+    if (response.ok) {
+      const data = await response.json();
+      if (data.models && data.models.length > 0) {
+        installedModelsList.innerHTML = data.models.map(model => `
+          <div class="installed-model-item">
+            <div>
+              <span class="model-name">${model.name}</span>
+              <span class="model-size">${formatSize(model.size)}</span>
+            </div>
+            <button class="delete-btn" data-model="${model.name}">Delete</button>
+          </div>
+        `).join('');
+        
+        // Add delete handlers
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', () => deleteModel(btn.dataset.model));
+        });
+      } else {
+        installedModelsList.innerHTML = '<div class="loading-models">No models installed yet</div>';
+      }
+    }
+  } catch (error) {
+    installedModelsList.innerHTML = '<div class="loading-models">❌ Cannot connect to Ollama</div>';
+  }
+}
+
+// Format file size
+function formatSize(bytes) {
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (gb >= 1) return gb.toFixed(1) + ' GB';
+  const mb = bytes / (1024 * 1024);
+  return mb.toFixed(0) + ' MB';
+}
+
+// Install model from card
+document.querySelectorAll('.model-card .install-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const modelName = e.target.closest('.model-card').dataset.model;
+    installModel(modelName, e.target);
+  });
+});
+
+// Install custom model
+installCustomBtn.addEventListener('click', () => {
+  const modelName = customModelInput.value.trim();
+  if (modelName) {
+    installModel(modelName, installCustomBtn);
+    customModelInput.value = '';
+  }
+});
+
+// Install model function
+async function installModel(modelName, button) {
+  button.textContent = 'Installing...';
+  button.classList.add('installing');
+  button.disabled = true;
+  
+  try {
+    const response = await fetch('http://localhost:11434/api/pull', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: modelName, stream: false })
+    });
+    
+    if (response.ok) {
+      showStatus(`✅ ${modelName} installed successfully!`);
+      button.textContent = '✓ Installed';
+      button.style.background = '#10b981';
+      
+      // Reload models in both places
+      setTimeout(() => {
+        loadAvailableModels();
+        loadInstalledModels();
+        button.textContent = 'Install';
+        button.classList.remove('installing');
+        button.disabled = false;
+        button.style.background = '';
+      }, 2000);
+    } else {
+      const error = await response.text();
+      showStatus(`❌ Failed to install ${modelName}`);
+      button.textContent = 'Install';
+      button.classList.remove('installing');
+      button.disabled = false;
+    }
+  } catch (error) {
+    showStatus(`❌ Error: ${error.message}`);
+    button.textContent = 'Install';
+    button.classList.remove('installing');
+    button.disabled = false;
+  }
+}
+
+// Delete model function
+async function deleteModel(modelName) {
+  if (!confirm(`Delete ${modelName}? This cannot be undone.`)) return;
+  
+  try {
+    const response = await fetch('http://localhost:11434/api/delete', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: modelName })
+    });
+    
+    if (response.ok) {
+      showStatus(`✅ ${modelName} deleted`);
+      loadAvailableModels();
+      loadInstalledModels();
+    } else {
+      showStatus(`❌ Failed to delete ${modelName}`);
+    }
+  } catch (error) {
+    showStatus(`❌ Error: ${error.message}`);
+  }
+}
+
