@@ -84,7 +84,15 @@ async function callOllamaAPI(prompt, context = '', onChunk) {
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
-    throw new Error(`Ollama API error (${response.status}): ${errorText}. Make sure OLLAMA_ORIGINS environment variable is set to "*" and Ollama is restarted.`);
+    let errorMsg = `Ollama API error (${response.status}): ${errorText}`;
+    
+    if (response.status === 403) {
+      errorMsg += '\n\n⚠️ CORS Error: Set OLLAMA_ORIGINS="*" environment variable and restart Ollama.';
+    } else if (response.status === 404 && errorText.includes('not found')) {
+      errorMsg += `\n\n⚠️ Model not found! Install it with: ollama pull ${model}\nOr select a different model from the dropdown.`;
+    }
+    
+    throw new Error(errorMsg);
   }
 
   const reader = response.body.getReader();

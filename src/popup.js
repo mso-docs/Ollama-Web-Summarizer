@@ -102,6 +102,44 @@ const themes = {
 
 const themeSelect = document.getElementById('themeSelect');
 
+// Fetch available models from Ollama
+async function loadAvailableModels() {
+  try {
+    const response = await fetch('http://localhost:11434/api/tags');
+    if (response.ok) {
+      const data = await response.json();
+      if (data.models && data.models.length > 0) {
+        // Clear current options
+        modelSelect.innerHTML = '';
+        
+        // Add available models
+        data.models.forEach(model => {
+          const option = document.createElement('option');
+          option.value = model.name;
+          option.textContent = model.name.replace(':latest', '');
+          modelSelect.appendChild(option);
+        });
+        
+        // Restore saved selection or use first available
+        chrome.storage.local.get(['model'], (result) => {
+          if (result.model && Array.from(modelSelect.options).some(opt => opt.value === result.model)) {
+            modelSelect.value = result.model;
+          } else if (modelSelect.options.length > 0) {
+            modelSelect.value = modelSelect.options[0].value;
+            chrome.storage.local.set({ model: modelSelect.value });
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load models:', error);
+    // Keep default options if fetch fails
+  }
+}
+
+// Load models on startup
+loadAvailableModels();
+
 // Load saved settings
 chrome.storage.local.get(['model', 'theme'], (result) => {
   if (result.model) {
