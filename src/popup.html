@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ollama Web Summarizer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-content">
+        <img src="../icons/llama-chat.png" alt="Llama" class="header-icon">
+        <h1>Ollama Summarizer</h1>
+      </div>
+      <div class="settings">
+        <div class="setting-group">
+          <label for="modelSelect">Model:</label>
+          <select id="modelSelect">
+            <option value="llama3.2:latest">llama3.2</option>
+            <option value="deepseek-r1:8b">deepseek-r1:8b</option>
+            <option value="qwen3:30b">qwen3:30b</option>
+            <option value="gpt-oss:20b">gpt-oss:20b</option>
+            <option value="llama4:scout">llama4:scout</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label for="themeSelect">Theme:</label>
+          <select id="themeSelect">
+            <option value="light">☀️ Light</option>
+            <option value="dark">🌙 Dark</option>
+            <option value="purple-light">🟣 Purple</option>
+            <option value="purple-dark">🟣 Purple Dark</option>
+            <option value="blue-light">🔵 Blue</option>
+            <option value="blue-dark">🔵 Blue Dark</option>
+            <option value="green-light">🟢 Green</option>
+            <option value="green-dark">🟢 Green Dark</option>
+            <option value="teal-light">🔷 Teal</option>
+            <option value="teal-dark">🔷 Teal Dark</option>
+            <option value="red-light">🔴 Red</option>
+            <option value="red-dark">🔴 Red Dark</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="summary">📄 Summary</button>
+        <button class="tab-btn" data-tab="chat">💬 Chat</button>
+      </div>
+
+      <div class="tab-content active" id="summaryTab">
+        <div class="action-section">
+          <button id="summarizeBtn" class="primary-btn">📄 Summarize Page</button>
+        </div>
+
+        <div id="summarySection" class="hidden">
+          <div id="summaryContent" class="content-box"></div>
+        </div>
+
+        <div id="loadingIndicator" class="loading hidden">
+          <div class="spinner"></div>
+          <span>I'm thinking...</span>
+        </div>
+
+        <div id="errorMessage" class="error hidden"></div>
+      </div>
+
+      <div class="tab-content" id="chatTab">
+        <div id="chatSection">
+          <div id="chatMessages" class="chat-messages">
+            <div class="chat-welcome">
+              <div class="chat-welcome-icon">💬</div>
+              <h3>Chat with AI</h3>
+              <p>Ask questions about this page or anything else!</p>
+            </div>
+          </div>
+          <div class="chat-input-container">
+            <input type="text" id="chatInput" placeholder="Ask anything about this page..." />
+            <button id="sendBtn" class="send-btn">Send</button>
+          </div>
+        </div>
+
+        <div id="chatLoadingIndicator" class="loading hidden">
+          <div class="spinner"></div>
+          <span>I'm thinking...</span>
+        </div>
+
+        <div id="chatErrorMessage" class="error hidden"></div>
+      </div>
+    </main>
+
+    <footer>
+      <p class="status" id="statusText">Ready</p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

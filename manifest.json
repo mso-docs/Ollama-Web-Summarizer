@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Ollama Web Summarizer",
+  "version": "1.0.0",
+  "description": "Summarize web content and chat about it using local Ollama",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "http://localhost:11434/*",
+    "http://127.0.0.1:11434/*"
+  ],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "icons/background-llama.png",
+      "48": "icons/background-llama.png",
+      "128": "icons/background-llama.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/background-llama.png",
+    "48": "icons/background-llama.png",
+    "128": "icons/background-llama.png"
+  }
+}
