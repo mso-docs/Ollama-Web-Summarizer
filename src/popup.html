@@ -19,6 +19,7 @@
           <select id="modelSelect">
             <option value="">Loading models...</option>
           </select>
+          <button id="manageModelsBtn" class="manage-models-btn" title="Manage Models">⚙️</button>
         </div>
         <div class="setting-group">
           <label for="themeSelect">Theme:</label>
@@ -90,6 +91,115 @@
     <footer>
       <p class="status" id="statusText">Ready</p>
     </footer>
+  </div>
+
+  <!-- Model Manager Modal -->
+  <div id="modelManagerModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📦 Model Manager</h2>
+        <button id="closeModalBtn" class="close-btn">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="installed-models-section">
+          <h3>Installed Models</h3>
+          <div id="installedModelsList" class="models-list">
+            <div class="loading-models">Loading...</div>
+          </div>
+        </div>
+        
+        <div class="available-models-section">
+          <h3>Popular Models</h3>
+          <p class="section-desc">Click to install a model</p>
+          <div class="models-grid">
+            <div class="model-card" data-model="llama3.2">
+              <div class="model-info">
+                <strong>Llama 3.2</strong>
+                <span class="model-size">2GB</span>
+              </div>
+              <p>Fast, lightweight, great for most tasks</p>
+              <button class="install-btn">Install</button>
+              <div class="progress-bar hidden">
+                <div class="progress-fill"></div>
+                <span class="progress-text">0%</span>
+              </div>
+            </div>
+            <div class="model-card" data-model="llama3.2:1b">
+              <div class="model-info">
+                <strong>Llama 3.2 (1B)</strong>
+                <span class="model-size">1.3GB</span>
+              </div>
+              <p>Ultra-fast, smallest model</p>
+              <button class="install-btn">Install</button>
+              <div class="progress-bar hidden">
+                <div class="progress-fill"></div>
+                <span class="progress-text">0%</span>
+              </div>
+            </div>
+            <div class="model-card" data-model="qwen2.5:3b">
+              <div class="model-info">
+                <strong>Qwen 2.5 (3B)</strong>
+                <span class="model-size">2GB</span>
+              </div>
+              <p>Fast and accurate</p>
+              <button class="install-btn">Install</button>
+              <div class="progress-bar hidden">
+                <div class="progress-fill"></div>
+                <span class="progress-text">0%</span>
+              </div>
+            </div>
+            <div class="model-card" data-model="phi3.5">
+              <div class="model-info">
+                <strong>Phi 3.5</strong>
+                <span class="model-size">2.2GB</span>
+              </div>
+              <p>Microsoft model, very capable</p>
+              <button class="install-btn">Install</button>
+              <div class="progress-bar hidden">
+                <div class="progress-fill"></div>
+                <span class="progress-text">0%</span>
+              </div>
+            </div>
+            <div class="model-card" data-model="mistral">
+              <div class="model-info">
+                <strong>Mistral</strong>
+                <span class="model-size">4.1GB</span>
+              </div>
+              <p>Balanced performance and quality</p>
+              <button class="install-btn">Install</button>
+              <div class="progress-bar hidden">
+                <div class="progress-fill"></div>
+                <span class="progress-text">0%</span>
+              </div>
+            </div>
+            <div class="model-card" data-model="gemma2:2b">
+              <div class="model-info">
+                <strong>Gemma 2 (2B)</strong>
+                <span class="model-size">1.6GB</span>
+              </div>
+              <p>Google model, compact and fast</p>
+              <button class="install-btn">Install</button>
+              <div class="progress-bar hidden">
+                <div class="progress-fill"></div>
+                <span class="progress-text">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="custom-model-section">
+          <h3>Install Custom Model</h3>
+          <div class="custom-input-group">
+            <input type="text" id="customModelInput" placeholder="e.g., deepseek-r1:8b">
+            <button id="installCustomBtn" class="install-btn">Install</button>
+          </div>
+          <div id="customProgressBar" class="progress-bar hidden">
+            <div class="progress-fill"></div>
+            <span class="progress-text">0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="popup.js"></script>

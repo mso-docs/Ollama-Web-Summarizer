@@ -66,6 +66,12 @@ const chatLoadingIndicator = document.getElementById('chatLoadingIndicator');
 const chatErrorMessage = document.getElementById('chatErrorMessage');
 const statusText = document.getElementById('statusText');
 const modelSelect = document.getElementById('modelSelect');
+const manageModelsBtn = document.getElementById('manageModelsBtn');
+const modelManagerModal = document.getElementById('modelManagerModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const installedModelsList = document.getElementById('installedModelsList');
+const installCustomBtn = document.getElementById('installCustomBtn');
+const customModelInput = document.getElementById('customModelInput');
 
 // Tab switching
 const tabBtns = document.querySelectorAll('.tab-btn');
@@ -441,3 +447,217 @@ function showStatus(message) {
     statusText.textContent = 'Ready';
   }, 3000);
 }
+
+// ========== MODEL MANAGER ==========
+
+// Open model manager modal
+manageModelsBtn.addEventListener('click', () => {
+  modelManagerModal.classList.remove('hidden');
+  loadInstalledModels();
+});
+
+// Close modal
+closeModalBtn.addEventListener('click', () => {
+  modelManagerModal.classList.add('hidden');
+});
+
+// Close modal on background click
+modelManagerModal.addEventListener('click', (e) => {
+  if (e.target === modelManagerModal) {
+    modelManagerModal.classList.add('hidden');
+  }
+});
+
+// Load installed models
+async function loadInstalledModels() {
+  try {
+    const response = await fetch('http://localhost:11434/api/tags');
+    if (response.ok) {
+      const data = await response.json();
+      if (data.models && data.models.length > 0) {
+        installedModelsList.innerHTML = data.models.map(model => `
+          <div class="installed-model-item">
+            <div>
+              <span class="model-name">${model.name}</span>
+              <span class="model-size">${formatSize(model.size)}</span>
+            </div>
+            <button class="delete-btn" data-model="${model.name}">Delete</button>
+          </div>
+        `).join('');
+        
+        // Add delete handlers
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', () => deleteModel(btn.dataset.model));
+        });
+        
+        // Update popular models list to show installed status
+        updatePopularModelsStatus(data.models.map(m => m.name));
+      } else {
+        installedModelsList.innerHTML = '<div class="loading-models">No models installed yet</div>';
+      }
+    }
+  } catch (error) {
+    installedModelsList.innerHTML = '<div class="loading-models">❌ Cannot connect to Ollama</div>';
+  }
+}
+
+// Update popular models to show which are already installed
+function updatePopularModelsStatus(installedModelNames) {
+  document.querySelectorAll('.model-card').forEach(card => {
+    const modelName = card.dataset.model;
+    const button = card.querySelector('.install-btn');
+    
+    // Check if this model is installed (exact match or base name match)
+    const isInstalled = installedModelNames.some(installed => 
+      installed === modelName || 
+      installed === modelName + ':latest' ||
+      installed.split(':')[0] === modelName.split(':')[0]
+    );
+    
+    if (isInstalled) {
+      button.textContent = '✓ Installed';
+      button.style.background = '#10b981';
+      button.style.cursor = 'default';
+      button.disabled = true;
+      button.classList.add('installed-btn');
+    } else {
+      button.textContent = 'Install';
+      button.style.background = '';
+      button.style.cursor = 'pointer';
+      button.disabled = false;
+      button.classList.remove('installed-btn');
+    }
+  });
+}
+
+// Format file size
+function formatSize(bytes) {
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (gb >= 1) return gb.toFixed(1) + ' GB';
+  const mb = bytes / (1024 * 1024);
+  return mb.toFixed(0) + ' MB';
+}
+
+// Install model from card
+document.querySelectorAll('.model-card .install-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const modelName = e.target.closest('.model-card').dataset.model;
+    installModel(modelName, e.target);
+  });
+});
+
+// Install custom model
+installCustomBtn.addEventListener('click', () => {
+  const modelName = customModelInput.value.trim();
+  if (modelName) {
+    installModel(modelName, installCustomBtn);
+    customModelInput.value = '';
+  }
+});
+
+// Install model function with progress
+async function installModel(modelName, button) {
+  const card = button.closest('.model-card') || button.closest('.custom-model-section');
+  const progressBar = card.querySelector('.progress-bar');
+  const progressFill = progressBar.querySelector('.progress-fill');
+  const progressText = progressBar.querySelector('.progress-text');
+  
+  button.textContent = 'Installing...';
+  button.classList.add('installing');
+  button.disabled = true;
+  progressBar.classList.remove('hidden');
+  
+  try {
+    const response = await fetch('http://localhost:11434/api/pull', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: modelName, stream: true })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to start download');
+    }
+    
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n').filter(line => line.trim());
+      
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line);
+          
+          // Calculate progress
+          if (data.total && data.completed) {
+            const percent = Math.round((data.completed / data.total) * 100);
+            progressFill.style.width = percent + '%';
+            progressText.textContent = percent + '%';
+            button.textContent = `Installing ${percent}%`;
+          }
+          
+          // Check if complete
+          if (data.status === 'success' || data.status === 'complete') {
+            progressFill.style.width = '100%';
+            progressText.textContent = '100%';
+            showStatus(`✅ ${modelName} installed successfully!`);
+            button.textContent = '✓ Installed';
+            button.style.background = '#10b981';
+            
+            // Reload models in both places
+            setTimeout(() => {
+              loadAvailableModels();
+              loadInstalledModels();
+              button.textContent = 'Install';
+              button.classList.remove('installing');
+              button.disabled = false;
+              button.style.background = '';
+              progressBar.classList.add('hidden');
+              progressFill.style.width = '0%';
+              progressText.textContent = '0%';
+            }, 2000);
+            break;
+          }
+        } catch (e) {
+          // Skip invalid JSON lines
+        }
+      }
+    }
+  } catch (error) {
+    showStatus(`❌ Error: ${error.message}`);
+    button.textContent = 'Install';
+    button.classList.remove('installing');
+    button.disabled = false;
+    progressBar.classList.add('hidden');
+    progressFill.style.width = '0%';
+    progressText.textContent = '0%';
+  }
+}
+
+// Delete model function
+async function deleteModel(modelName) {
+  if (!confirm(`Delete ${modelName}? This cannot be undone.`)) return;
+  
+  try {
+    const response = await fetch('http://localhost:11434/api/delete', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: modelName })
+    });
+    
+    if (response.ok) {
+      showStatus(`✅ ${modelName} deleted`);
+      loadAvailableModels();
+      loadInstalledModels();
+    } else {
+      showStatus(`❌ Failed to delete ${modelName}`);
+    }
+  } catch (error) {
+    showStatus(`❌ Error: ${error.message}`);
+  }
+}
+
