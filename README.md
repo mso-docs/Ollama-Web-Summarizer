@@ -2,7 +2,7 @@
 
 ![Ollama Summarizer Logo](icons/Ollama-Summarizer.png)
 
-A Chrome extension that uses local Ollama to summarize web content, explain concepts, and chat about it.
+A Chrome extension that uses your local Ollama to summarize web content, explain concepts, and chat about it.
 
 ## Project Structure
 
