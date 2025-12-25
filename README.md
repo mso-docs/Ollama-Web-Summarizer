@@ -97,7 +97,7 @@ ollama pull mistral
 ollama pull deepseek-r1
 ```
 
-Reload the extension and the new models will appear in the dropdown.
+Reload the extension and the new models will appear in the dropdown menu.
 
 ### Themes
 Choose from 12 color themes (6 light, 6 dark) in the theme dropdown. Your preference is saved automatically.
