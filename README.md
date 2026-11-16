@@ -1,114 +1,95 @@
-# Ollama Web Summarizer Chrome Extension
+# Ollama Web Summarizer
 
 ![Ollama Summarizer Logo](icons/Ollama-Summarizer.png)
 
-A Chrome extension that uses your local Ollama to summarize web content, explain concepts, and chat about it
+A Chrome extension that uses your local [Ollama](https://ollama.com) models to summarize the page you are reading, explain selected text, and chat about the content. Page text and questions stay on your computer.
 
-## Project Structure
-
-```
-ollama-ext/
-├── manifest.json          # Extension manifest
-├── README.md              # Main documentation
-├── src/                   # Source code
-│   ├── background.js      # Service worker for API calls
-│   ├── content.js         # Content script for page interaction
-│   ├── popup.html         # Extension popup UI
-│   ├── popup.css          # Popup styles with theme support
-│   └── popup.js           # Popup logic and theme system
-├── icons/                 # Image assets
-│   ├── background-llama.png
-│   ├── llama-chat.png
-│   ├── icon128.svg
-│   └── Ollama-Summarizer.png
-├── scripts/               # Helper scripts
-│   ├── start-ollama.bat   # Windows Ollama startup
-│   ├── start-ollama.sh    # Unix Ollama startup
-│   └── create-icons.sh    # Icon generation script
-└── docs/                  # Documentation
-    └── INSTALLATION.md    # Detailed setup guide
-```
+This is not an official Ollama product, and it is not affiliated with Ollama Inc.
 
 ## Features
 
-- 📄 **Summarize any web page** - Click the extension to get instant summaries
-- 💬 **Interactive chat** - Ask follow-up questions about the content
-- ✨ **Text selection popup** - Highlight text to summarize, explain, or ask questions
-- 🖱️ **Right-click context menu** - Quick access to AI features on any text
-- ⚡ **Real-time streaming** - See responses as they're generated with "I'm thinking..." indicators
-- 🔄 **Auto-detect models** - Automatically loads all your installed Ollama models into the dropdown
-- 🎨 **12 themes** - Customize appearance with light/dark color schemes
-- 🔒 **100% local** - All processing happens on your machine via Ollama
-- 🚀 **No external API calls** - Complete privacy
+- Summarize any regular webpage from the toolbar popup
+- Highlight text to summarize, explain, or ask a question
+- Right-click selected text for the same actions
+- Chat about the current page, with streamed replies
+- Auto-detect installed Ollama models, and install or remove models from the popup
+- Twelve light and dark themes
+- All generation happens on your machine through Ollama. The extension does not call a cloud API
 
 ## Prerequisites
 
-- [Ollama](https://ollama.ai) installed and running locally
-- At least one model installed:
-  ```bash
-  ollama pull llama3.2
-  # Or any other model: mistral, qwen2.5, deepseek-r1, etc.
-  ```
+- [Ollama](https://ollama.com) installed and running locally
+- At least one model, for example:
 
-## Quick Install
-
-### 1. Set CORS environment variable (one-time)
-**Windows:** `[System.Environment]::SetEnvironmentVariable('OLLAMA_ORIGINS', '*', 'User')`  
-**Mac/Linux:** `echo 'export OLLAMA_ORIGINS="*"' >> ~/.bashrc && source ~/.bashrc`
-
-### 2. Install a model (if you haven't already)
 ```bash
 ollama pull llama3.2
 ```
 
-### 3. Start Ollama
-```bash
-ollama serve
-```
+## Install from the Chrome Web Store
 
-### 4. Load extension
-1. Chrome → `chrome://extensions/` → Enable "Developer mode"
-2. Click "Load unpacked" → Select `ollama-ext` folder
+When the listing is published, install it from the Chrome Web Store, then finish the Ollama setup below. Until then, use the developer (unpacked) install.
 
-**📖 For detailed setup instructions, see [INSTALLATION.md](docs/INSTALLATION.md)**
+## Developer install
+
+1. Set `OLLAMA_ORIGINS` so Ollama accepts requests from this extension. See [Installation](docs/INSTALLATION.md) for Mac, Windows, and Linux, including the Mac Ollama app. After you load the extension, copy its ID from `chrome://extensions` and set:
+
+   ```bash
+   export OLLAMA_ORIGINS="chrome-extension://YOUR_EXTENSION_ID"
+   ```
+
+   For local testing you can use `chrome-extension://*`. Do not set `OLLAMA_ORIGINS` to `*`. That allows any website to call your local Ollama API.
+
+2. Start Ollama (or use `scripts/start-ollama.sh` / `scripts/start-ollama.bat`, which set a safe default origin).
+
+3. In Chrome, open `chrome://extensions`, turn on Developer mode, click **Load unpacked**, and select this repository folder (the one that contains `manifest.json`).
 
 ## Usage
 
-1. Navigate to any webpage
-2. Click the extension icon in your Chrome toolbar
-3. Click "Summarize Page" to get a summary
-4. Use the chat below to ask follow-up questions about the content
+1. Open a regular webpage (not a `chrome://` page).
+2. Click the extension icon and choose **Summarize Page**.
+3. Use the chat tab for follow-up questions.
+4. Highlight text on the page to summarize, explain, or ask about the selection.
 
-## Configuration
+In the popup you can also set the Ollama URL (it must be `http://localhost` or `http://127.0.0.1`, with an optional port). The default is `http://localhost:11434`.
 
-### Model Selection
-The extension automatically detects all models installed in your Ollama instance by calling the `/api/tags` endpoint. The model dropdown will populate with your available models - no manual configuration needed!
+## Privacy
 
-**How it works:**
-- On startup, the extension queries `http://localhost:11434/api/tags`
-- All installed models (same as `ollama list`) appear in the dropdown
-- Select any model to use it for summarization and chat
-- Your selection is saved for future sessions
+Page text, selected text, and your questions are sent only to Ollama on this computer, usually at `http://localhost:11434`. The extension stores your model, theme, and server URL in Chrome’s local storage. It does not create an account and does not send browsing data to the developer or to any third-party server.
 
-**To add more models:**
+The full policy is at [docs/privacy.html](docs/privacy.html). After GitHub Pages is enabled on this repository, it will also be available at `https://mso-docs.github.io/Ollama-Web-Summarizer/privacy.html`.
+
+## Build a store package
+
 ```bash
-ollama pull llama3.2
-ollama pull mistral
-ollama pull deepseek-r1
+./scripts/build-zip.sh
 ```
 
-Reload the extension and the new models will appear in the dropdown menu.
+This writes `dist/ollama-web-summarizer-1.0.1.zip` with `manifest.json` at the zip root. Docs, helper scripts, and the large marketing PNG are left out of the package. Draft store listing text, permission justifications, and test instructions are in [docs/chrome-web-store-listing.md](docs/chrome-web-store-listing.md).
 
-### Themes
-Choose from 12 color themes (6 light, 6 dark) in the theme dropdown. Your preference is saved automatically.
+## Project structure
 
-## Quick Troubleshooting
+```
+Ollama-Web-Summarizer/
+├── manifest.json
+├── README.md
+├── src/                    # Extension source
+├── icons/                  # Toolbar, store, and README images
+├── scripts/                # Zip build, icon generation, Ollama helpers
+└── docs/                   # Install guide, privacy policy, store drafts
+```
 
-| Error | Solution |
-|-------|----------|
-| **403 Forbidden** | Set `OLLAMA_ORIGINS="*"` environment variable (see install step 1) |
-| **404 Model not found** | Run `ollama pull <model-name>` or select different model |
-| **Connection Error** | Start Ollama with `ollama serve` |
-| **Empty model dropdown** | Ensure Ollama is running and has models (`ollama list`) |
+## Troubleshooting
 
-**📖 For complete troubleshooting guide, see [INSTALLATION.md](docs/INSTALLATION.md)**
+| Error | What to try |
+|-------|-------------|
+| Cannot connect to Ollama | Start Ollama, then confirm it answers at `http://localhost:11434`. On a Mac, quitting and reopening the Ollama app after you set `OLLAMA_ORIGINS` is often required. |
+| 403 Forbidden | Set `OLLAMA_ORIGINS` to `chrome-extension://YOUR_EXTENSION_ID` (not `*`) and restart Ollama. |
+| Model not found | Run `ollama pull <model-name>` or pick a model you already have. |
+| Empty model dropdown | Make sure Ollama is running and `ollama list` shows at least one model. |
+| Could not access this page | Refresh the tab, or switch to a regular `http` or `https` page. |
+
+For complete setup notes, including the Mac Ollama app and environment variables, see [docs/INSTALLATION.md](docs/INSTALLATION.md).
+
+## License
+
+MIT. Copyright Mackenzie O'Brien.

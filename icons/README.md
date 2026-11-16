@@ -1,14 +1,12 @@
-# Extension Icons
+# Extension icons
 
-This extension uses the following icon files:
+The Chrome Web Store and Chrome itself need raster PNG icons at the exact sizes declared in `manifest.json`:
 
-- **background-llama.png** - Extension icon (shown in Chrome toolbar and extensions page)
-- **llama-chat.png** - Chat icon (shown in the popup header)
+- `icon16.png` — 16×16, toolbar
+- `icon32.png` — 32×32, Windows and high-DPI toolbars
+- `icon48.png` — 48×48, `chrome://extensions`
+- `icon128.png` — 128×128, installation and the store listing. The artwork sits in a 96×96 area with 16 pixels of transparent padding, per Chrome’s store icon guidelines.
 
-## Required Files
+`llama-chat.png` is the small header image in the popup. `Ollama-Summarizer.png` is marketing art for the README. It is not packed into the store zip.
 
-Place your icon images in this folder:
-- `background-llama.png` - For the extension icon
-- `llama-chat.png` - For the chat/header icon
-
-The extension will use the same image file for all sizes (16x16, 48x48, 128x128). Chrome will automatically scale them as needed.
+To regenerate the sized icons from the source art, run `scripts/create-icons.sh` (requires Python and Pillow).

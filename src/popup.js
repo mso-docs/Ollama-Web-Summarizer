@@ -1,64 +1,17 @@
-// Popup script
+'use strict';
+
 let pageContent = null;
 let conversationHistory = [];
+let activeRequest = null;
+let modalPreviousFocus = null;
 
-// Convert Markdown-style formatting to HTML
-function formatText(text) {
-  // Escape HTML first to prevent XSS
-  let formatted = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  
-  // Bold: **text** or __text__
-  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  formatted = formatted.replace(/__(.+?)__/g, '<strong>$1</strong>');
-  
-  // Italic: *text* or _text_
-  formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  formatted = formatted.replace(/_(.+?)_/g, '<em>$1</em>');
-  
-  // Code: `code`
-  formatted = formatted.replace(/`(.+?)`/g, '<code>$1</code>');
-  
-  // Line breaks
-  formatted = formatted.replace(/\n/g, '<br>');
-  
-  // Bullet points (lines starting with - or *)
-  formatted = formatted.replace(/^[\-\*]\s+(.+)$/gm, '<li>$1</li>');
-  formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-  
-  // Numbered lists
-  formatted = formatted.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
-  
-  return formatted;
-}
-
-// Convert URLs in text to clickable links
-function linkifyText(text) {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  return text.replace(urlRegex, (url) => {
-    // Remove trailing punctuation that's not part of URL
-    let cleanUrl = url.replace(/[.,;!?]$/, '');
-    let punctuation = url.length > cleanUrl.length ? url.slice(-1) : '';
-    return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="chat-link">${cleanUrl}</a>${punctuation}`;
-  });
-}
-
-// Apply both formatting and linkify
-function processText(text) {
-  let processed = formatText(text);
-  processed = linkifyText(processed);
-  return processed;
-}
-
-// DOM elements
 const summarizeBtn = document.getElementById('summarizeBtn');
+const cancelSummaryBtn = document.getElementById('cancelSummaryBtn');
 const sendBtn = document.getElementById('sendBtn');
+const cancelChatBtn = document.getElementById('cancelChatBtn');
 const chatInput = document.getElementById('chatInput');
 const summarySection = document.getElementById('summarySection');
 const summaryContent = document.getElementById('summaryContent');
-const chatSection = document.getElementById('chatSection');
 const chatMessages = document.getElementById('chatMessages');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const errorMessage = document.getElementById('errorMessage');
@@ -72,481 +25,631 @@ const closeModalBtn = document.getElementById('closeModalBtn');
 const installedModelsList = document.getElementById('installedModelsList');
 const installCustomBtn = document.getElementById('installCustomBtn');
 const customModelInput = document.getElementById('customModelInput');
+const themeSelect = document.getElementById('themeSelect');
+const ollamaUrlInput = document.getElementById('ollamaUrlInput');
 
-// Tab switching
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
 
-tabBtns.forEach(btn => {
+tabBtns.forEach((btn) => {
   btn.addEventListener('click', () => {
     const tabName = btn.dataset.tab;
-    
-    // Update active states
-    tabBtns.forEach(b => b.classList.remove('active'));
-    tabContents.forEach(c => c.classList.remove('active'));
-    
-    btn.classList.add('active');
-    document.getElementById(tabName + 'Tab').classList.add('active');
+    tabBtns.forEach((other) => {
+      other.classList.toggle('active', other === btn);
+      other.setAttribute('aria-selected', other === btn ? 'true' : 'false');
+    });
+    tabContents.forEach((panel) => {
+      panel.classList.toggle('active', panel.id === `${tabName}Tab`);
+    });
   });
 });
 
-// Theme definitions
-const themes = {
-  'light': { primary: '#6366f1', secondary: '#4f46e5', bg: '#ffffff', text: '#1f2937', cardBg: '#ffffff', tabBg: '#ffffff', dark: false },
-  'dark': { primary: '#818cf8', secondary: '#6366f1', bg: '#1a1a1a', text: '#f3f4f6', cardBg: '#1a1a1a', tabBg: '#1a1a1a', dark: true },
-  'purple-light': { primary: '#667eea', secondary: '#764ba2', bg: '#ffffff', text: '#1f2937', cardBg: '#ffffff', tabBg: '#ffffff', dark: false },
-  'purple-dark': { primary: '#7c3aed', secondary: '#9333ea', bg: '#1a1a1a', text: '#e0e0e0', cardBg: '#1a1a1a', tabBg: '#1a1a1a', dark: true },
-  'blue-light': { primary: '#3b82f6', secondary: '#2563eb', bg: '#ffffff', text: '#1e293b', cardBg: '#ffffff', tabBg: '#ffffff', dark: false },
-  'blue-dark': { primary: '#60a5fa', secondary: '#3b82f6', bg: '#1a1a1a', text: '#e2e8f0', cardBg: '#1a1a1a', tabBg: '#1a1a1a', dark: true },
-  'green-light': { primary: '#10b981', secondary: '#059669', bg: '#ffffff', text: '#064e3b', cardBg: '#ffffff', tabBg: '#ffffff', dark: false },
-  'green-dark': { primary: '#34d399', secondary: '#10b981', bg: '#1a1a1a', text: '#d1fae5', cardBg: '#1a1a1a', tabBg: '#1a1a1a', dark: true },
-  'teal-light': { primary: '#14b8a6', secondary: '#0d9488', bg: '#ffffff', text: '#134e4a', cardBg: '#ffffff', tabBg: '#ffffff', dark: false },
-  'teal-dark': { primary: '#2dd4bf', secondary: '#14b8a6', bg: '#1a1a1a', text: '#ccfbf1', cardBg: '#1a1a1a', tabBg: '#1a1a1a', dark: true },
-  'red-light': { primary: '#ef4444', secondary: '#dc2626', bg: '#ffffff', text: '#7f1d1d', cardBg: '#ffffff', tabBg: '#ffffff', dark: false },
-  'red-dark': { primary: '#f87171', secondary: '#ef4444', bg: '#1a1a1a', text: '#fee2e2', cardBg: '#1a1a1a', tabBg: '#1a1a1a', dark: true }
-};
-
-const themeSelect = document.getElementById('themeSelect');
-
-// Fetch available models from Ollama
-async function loadAvailableModels() {
-  try {
-    const response = await fetch('http://localhost:11434/api/tags');
-    if (response.ok) {
-      const data = await response.json();
-      if (data.models && data.models.length > 0) {
-        // Clear current options
-        modelSelect.innerHTML = '';
-        
-        // Add available models
-        data.models.forEach(model => {
-          const option = document.createElement('option');
-          option.value = model.name;
-          option.textContent = model.name.replace(':latest', '');
-          modelSelect.appendChild(option);
-        });
-        
-        // Restore saved selection or use first available
-        chrome.storage.local.get(['model'], (result) => {
-          if (result.model && Array.from(modelSelect.options).some(opt => opt.value === result.model)) {
-            modelSelect.value = result.model;
-          } else if (modelSelect.options.length > 0) {
-            // Use first available model as default
-            modelSelect.value = modelSelect.options[0].value;
-            chrome.storage.local.set({ model: modelSelect.value });
-          }
-        });
-      } else {
-        // No models found
-        modelSelect.innerHTML = '<option value="">No models installed - run: ollama pull llama3.2</option>';
-      }
-    } else {
-      modelSelect.innerHTML = '<option value="">Cannot connect to Ollama</option>';
-    }
-  } catch (error) {
-    console.error('Failed to load models:', error);
-    modelSelect.innerHTML = '<option value="">Cannot connect to Ollama - is it running?</option>';
-  }
-}
-
-// Load models on startup
-loadAvailableModels();
-
-// Load saved settings
-chrome.storage.local.get(['model', 'theme'], (result) => {
-  if (result.model) {
-    modelSelect.value = result.model;
-  }
-  if (result.theme) {
-    themeSelect.value = result.theme;
-    applyTheme(result.theme);
-  } else {
-    applyTheme('purple-light');
-  }
-});
-
-// Save model selection
-modelSelect.addEventListener('change', () => {
-  chrome.storage.local.set({ model: modelSelect.value });
-  showStatus('Model changed to ' + modelSelect.value);
-});
-
-// Save and apply theme selection
-themeSelect.addEventListener('change', () => {
-  const selectedTheme = themeSelect.value;
-  chrome.storage.local.set({ theme: selectedTheme });
-  applyTheme(selectedTheme);
-  showStatus('Theme changed');
-});
-
-// Apply theme to the popup
 function applyTheme(themeName) {
-  const theme = themes[themeName] || themes['purple-light'];
+  const theme = getTheme(themeName);
   const root = document.documentElement;
-  
   root.style.setProperty('--primary-color', theme.primary);
   root.style.setProperty('--secondary-color', theme.secondary);
   root.style.setProperty('--bg-color', theme.bg);
   root.style.setProperty('--text-color', theme.text);
   root.style.setProperty('--card-bg', theme.cardBg);
   root.style.setProperty('--tab-bg', theme.tabBg);
-  
-  // Update body background
   document.body.style.background = theme.bg;
   document.body.style.color = theme.text;
-  
-  // Apply dark mode specific styles
-  if (theme.dark) {
-    document.body.classList.add('dark-mode');
-  } else {
-    document.body.classList.remove('dark-mode');
-  }
-}
-
-// Summarize button click
-summarizeBtn.addEventListener('click', async () => {
-  try {
-    showLoading(true);
-    hideError();
-    
-    // Get page content from content script
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
-    chrome.tabs.sendMessage(tab.id, { action: 'getPageContent' }, async (response) => {
-      if (chrome.runtime.lastError) {
-        showError('Could not access page content. Try refreshing the page.');
-        showLoading(false);
-        return;
-      }
-
-      pageContent = response;
-      
-      // Create summarization prompt
-      const prompt = `Please provide a concise summary of the following webpage content in 3-5 bullet points:\n\nTitle: ${pageContent.title}\n\nContent: ${pageContent.content}`;
-      
-      // Show sections and prepare for streaming
-      summaryContent.textContent = 'I\'m thinking...';
-      summaryContent.style.fontStyle = 'italic';
-      summaryContent.style.color = '#999';
-      summarySection.classList.remove('hidden');
-      
-      const messageId = 'summary-' + Date.now();
-      
-      // Listen for streaming chunks
-      let firstChunk = true;
-      let accumulatedText = '';
-      const chunkListener = (message) => {
-        if (message.action === 'streamChunk' && message.messageId === messageId) {
-          if (firstChunk) {
-            summaryContent.textContent = '';
-            summaryContent.style.fontStyle = 'normal';
-            summaryContent.style.color = '#444';
-            firstChunk = false;
-          }
-          accumulatedText += message.chunk;
-          summaryContent.innerHTML = processText(accumulatedText);
-        }
-      };
-      chrome.runtime.onMessage.addListener(chunkListener);
-      
-      // Call Ollama
-      const summary = await callOllama(prompt, '', messageId);
-      
-      // Remove listener
-      chrome.runtime.onMessage.removeListener(chunkListener);
-      
-      // Display final summary
-      summaryContent.innerHTML = processText(summary);
-      summaryContent.style.fontStyle = 'normal';
-      summaryContent.style.color = '#444';
-      
-      // Initialize conversation history
-      conversationHistory = [
-        { role: 'system', content: `You are a helpful assistant. The user is reading a webpage titled "${pageContent.title}". Here is the content: ${pageContent.content}` }
-      ];
-      
-      showLoading(false);
-      showStatus('Summary complete!');
-    });
-  } catch (error) {
-    showError(error.message);
-    showLoading(false);
-  }
-});
-
-// Send chat message
-sendBtn.addEventListener('click', sendChatMessage);
-chatInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    sendChatMessage();
-  }
-});
-
-async function sendChatMessage() {
-  const message = chatInput.value.trim();
-  if (!message) return;
-
-  try {
-    // Get page content if not already loaded
-    if (!pageContent) {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      try {
-        pageContent = await new Promise((resolve, reject) => {
-          chrome.tabs.sendMessage(tab.id, { action: 'getPageContent' }, (response) => {
-            if (chrome.runtime.lastError) {
-              reject(new Error('Could not access page content. Try refreshing the page.'));
-            } else {
-              resolve(response);
-            }
-          });
-        });
-      } catch (error) {
-        showChatError(error.message);
-        return;
-      }
-    }
-
-    // Add user message to chat
-    addChatMessage(message, 'user');
-    chatInput.value = '';
-    chatLoadingIndicator.classList.remove('hidden');
-    hideChatError();
-
-    // Remove welcome message if present
-    const welcome = chatMessages.querySelector('.chat-welcome');
-    if (welcome) {
-      welcome.remove();
-    }
-    
-    // Create placeholder for assistant message
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'chat-message assistant';
-    
-    const label = document.createElement('div');
-    label.className = 'message-label';
-    label.textContent = 'Assistant';
-    
-    const content = document.createElement('div');
-    content.className = 'message-content';
-    content.textContent = 'I\'m thinking...';
-    content.style.fontStyle = 'italic';
-    content.style.color = '#999';
-    
-    messageDiv.appendChild(label);
-    messageDiv.appendChild(content);
-    chatMessages.appendChild(messageDiv);
-    
-    const messageId = 'chat-' + Date.now();
-    
-    // Listen for streaming chunks
-    let firstChunk = true;
-    let accumulatedText = '';
-    const chunkListener = (msg) => {
-      if (msg.action === 'streamChunk' && msg.messageId === messageId) {
-        if (firstChunk) {
-          content.textContent = '';
-          content.style.fontStyle = 'normal';
-          content.style.color = '#333';
-          firstChunk = false;
-        }
-        accumulatedText += msg.chunk;
-        content.innerHTML = processText(accumulatedText);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      }
-    };
-    chrome.runtime.onMessage.addListener(chunkListener);
-
-    // Call Ollama with context
-    const response = await callOllama(message, pageContent.content, messageId);
-    
-    // Remove listener
-    chrome.runtime.onMessage.removeListener(chunkListener);
-    
-    // Ensure final content is set
-    content.innerHTML = processText(response);
-    content.style.fontStyle = 'normal';
-    content.style.color = '#333';
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    
-    chatLoadingIndicator.classList.add('hidden');
-  } catch (error) {
-    showChatError(error.message);
-    chatLoadingIndicator.classList.add('hidden');
-  }
-}
-
-function addChatMessage(text, role) {
-  // Remove welcome message if present
-  const welcome = chatMessages.querySelector('.chat-welcome');
-  if (welcome) {
-    welcome.remove();
-  }
-  
-  const messageDiv = document.createElement('div');
-  messageDiv.className = `chat-message ${role}`;
-  
-  const label = document.createElement('div');
-  label.className = 'message-label';
-  label.textContent = role === 'user' ? 'You' : 'Assistant';
-  
-  const content = document.createElement('div');
-  content.className = 'message-content';
-  content.innerHTML = processText(text);
-  
-  messageDiv.appendChild(label);
-  messageDiv.appendChild(content);
-  chatMessages.appendChild(messageDiv);
-  
-  // Scroll to bottom
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-async function callOllama(prompt, context = '', messageId = '') {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
-      { action: 'callOllama', prompt, context, messageId },
-      (response) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-        } else if (response.success) {
-          resolve(response.data);
-        } else {
-          reject(new Error(response.error || 'Unknown error'));
-        }
-      }
-    );
-  });
+  document.body.classList.toggle('dark-mode', theme.dark);
 }
 
 function showLoading(show) {
   loadingIndicator.classList.toggle('hidden', !show);
+  cancelSummaryBtn.classList.toggle('hidden', !show);
+  summarizeBtn.disabled = show;
 }
 
 function showError(message) {
-  errorMessage.textContent = '❌ ' + message;
+  errorMessage.textContent = message;
   errorMessage.classList.remove('hidden');
 }
 
 function hideError() {
   errorMessage.classList.add('hidden');
+  errorMessage.textContent = '';
 }
 
 function showChatError(message) {
-  chatErrorMessage.textContent = '❌ ' + message;
+  chatErrorMessage.textContent = message;
   chatErrorMessage.classList.remove('hidden');
 }
 
 function hideChatError() {
   chatErrorMessage.classList.add('hidden');
+  chatErrorMessage.textContent = '';
 }
 
 function showStatus(message) {
   statusText.textContent = message;
-  setTimeout(() => {
-    statusText.textContent = 'Ready';
-  }, 3000);
 }
 
-// ========== MODEL MANAGER ==========
+function sendMessage(payload) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(payload, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      resolve(response);
+    });
+  });
+}
 
-// Open model manager modal
-manageModelsBtn.addEventListener('click', () => {
-  modelManagerModal.classList.remove('hidden');
-  loadInstalledModels();
-});
+function generateWithOllama(prompt, context, onUpdate) {
+  const port = chrome.runtime.connect({ name: 'ollama-generate' });
+  const requestId = `popup-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  let settled = false;
+  let fullText = '';
 
-// Close modal
-closeModalBtn.addEventListener('click', () => {
-  modelManagerModal.classList.add('hidden');
-});
+  const promise = new Promise((resolve, reject) => {
+    port.onMessage.addListener((message) => {
+      if (!message || message.requestId !== requestId) {
+        return;
+      }
+      if (message.type === 'chunk') {
+        fullText += message.chunk || '';
+        if (onUpdate) {
+          onUpdate(fullText);
+        }
+      } else if (message.type === 'done') {
+        settled = true;
+        port.disconnect();
+        resolve(fullText);
+      } else if (message.type === 'aborted') {
+        settled = true;
+        port.disconnect();
+        reject(new DOMException('Aborted', 'AbortError'));
+      } else if (message.type === 'error') {
+        settled = true;
+        port.disconnect();
+        reject(new Error(message.error || 'Unknown error'));
+      }
+    });
+    port.onDisconnect.addListener(() => {
+      if (!settled) {
+        settled = true;
+        const err = chrome.runtime.lastError;
+        reject(new Error(err && err.message ? err.message : 'Lost connection to the extension.'));
+      }
+    });
+    port.postMessage({ action: 'generate', requestId, prompt, context });
+  });
 
-// Close modal on background click
-modelManagerModal.addEventListener('click', (e) => {
-  if (e.target === modelManagerModal) {
-    modelManagerModal.classList.add('hidden');
-  }
-});
-
-// Load installed models
-async function loadInstalledModels() {
-  try {
-    const response = await fetch('http://localhost:11434/api/tags');
-    if (response.ok) {
-      const data = await response.json();
-      if (data.models && data.models.length > 0) {
-        installedModelsList.innerHTML = data.models.map(model => `
-          <div class="installed-model-item">
-            <div>
-              <span class="model-name">${model.name}</span>
-              <span class="model-size">${formatSize(model.size)}</span>
-            </div>
-            <button class="delete-btn" data-model="${model.name}">Delete</button>
-          </div>
-        `).join('');
-        
-        // Add delete handlers
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-          btn.addEventListener('click', () => deleteModel(btn.dataset.model));
-        });
-        
-        // Update popular models list to show installed status
-        updatePopularModelsStatus(data.models.map(m => m.name));
-      } else {
-        installedModelsList.innerHTML = '<div class="loading-models">No models installed yet</div>';
+  return {
+    promise,
+    abort() {
+      if (!settled) {
+        try {
+          port.postMessage({ action: 'abort', requestId });
+          port.disconnect();
+        } catch (error) {
+          // Already disconnected.
+        }
       }
     }
+  };
+}
+
+function abortActiveRequest() {
+  if (activeRequest && activeRequest.abort) {
+    activeRequest.abort();
+  }
+  activeRequest = null;
+}
+
+async function getActiveTab() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab || tab.id == null) {
+    throw new Error('No active tab found.');
+  }
+  return tab;
+}
+
+function getPageContentFromTab(tabId) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(tabId, { action: 'getPageContent' }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error('Could not access this page. Try a regular http(s) page, then refresh and try again.'));
+        return;
+      }
+      resolve(response);
+    });
+  });
+}
+
+async function ensurePageContent() {
+  if (pageContent && pageContent.content) {
+    return pageContent;
+  }
+  const tab = await getActiveTab();
+  pageContent = await getPageContentFromTab(tab.id);
+  return pageContent;
+}
+
+function setSelectPlaceholder(text) {
+  modelSelect.replaceChildren();
+  const option = document.createElement('option');
+  option.value = '';
+  option.textContent = text;
+  modelSelect.appendChild(option);
+}
+
+async function loadAvailableModels() {
+  try {
+    const response = await sendMessage({ action: 'listModels' });
+    if (!response || !response.success) {
+      throw new Error(response && response.error ? response.error : 'Cannot connect to Ollama.');
+    }
+    const models = response.models || [];
+    if (models.length === 0) {
+      setSelectPlaceholder('No models installed — run: ollama pull llama3.2');
+      showStatus('Ollama is running, but no models are installed.');
+      return;
+    }
+
+    const settings = await getExtensionSettings();
+    modelSelect.replaceChildren();
+    models.forEach((model) => {
+      const option = document.createElement('option');
+      option.value = model.name;
+      option.textContent = String(model.name).replace(/:latest$/, '');
+      modelSelect.appendChild(option);
+    });
+
+    const available = Array.from(modelSelect.options).map((opt) => opt.value);
+    if (settings.model && available.includes(settings.model)) {
+      modelSelect.value = settings.model;
+    } else {
+      modelSelect.value = available[0];
+      await chrome.storage.local.set({ model: modelSelect.value });
+    }
+    showStatus('Ready');
   } catch (error) {
-    installedModelsList.innerHTML = '<div class="loading-models">❌ Cannot connect to Ollama</div>';
+    setSelectPlaceholder('Cannot connect to Ollama');
+    showStatus('Ollama is not reachable.');
+    console.error('Failed to load models:', error);
   }
 }
 
-// Update popular models to show which are already installed
+function buildChatContext() {
+  const parts = [];
+  if (pageContent) {
+    parts.push(`The user is reading a webpage titled "${pageContent.title || 'Untitled'}".`);
+    if (pageContent.content) {
+      parts.push(`Here is the page content:\n${pageContent.content}`);
+    }
+  }
+  if (conversationHistory.length) {
+    const recent = conversationHistory.slice(-8);
+    parts.push('Recent conversation:');
+    recent.forEach((item) => {
+      parts.push(`${item.role === 'user' ? 'User' : 'Assistant'}: ${item.content}`);
+    });
+  }
+  return parts.join('\n\n');
+}
+
+async function summarizePage() {
+  abortActiveRequest();
+  try {
+    showLoading(true);
+    hideError();
+    showStatus('Summarizing…');
+
+    const currentPage = await ensurePageContent();
+    const prompt = `Please provide a concise summary of the following webpage content in 3-5 bullet points:\n\nTitle: ${currentPage.title}\n\nContent: ${currentPage.content}`;
+
+    summaryContent.textContent = "I'm thinking...";
+    summarySection.classList.remove('hidden');
+
+    const handle = generateWithOllama(prompt, '', (fullText) => {
+      renderRichText(summaryContent, fullText);
+    });
+    activeRequest = handle;
+    const summary = await handle.promise;
+    renderRichText(summaryContent, summary);
+    conversationHistory = [
+      { role: 'system', content: `Webpage title: ${currentPage.title}` },
+      { role: 'assistant', content: summary }
+    ];
+    showStatus('Summary complete.');
+  } catch (error) {
+    if (error && error.name === 'AbortError') {
+      showStatus('Stopped.');
+    } else {
+      showError(error.message || 'Could not summarize this page.');
+      showStatus('Ready');
+    }
+  } finally {
+    activeRequest = null;
+    showLoading(false);
+  }
+}
+
+function addChatMessage(text, role) {
+  const welcome = chatMessages.querySelector('.chat-welcome');
+  if (welcome) {
+    welcome.remove();
+  }
+
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `chat-message ${role}`;
+
+  const label = document.createElement('div');
+  label.className = 'message-label';
+  label.textContent = role === 'user' ? 'You' : 'Assistant';
+
+  const content = document.createElement('div');
+  content.className = 'message-content';
+  if (role === 'user') {
+    content.textContent = text;
+  } else {
+    renderRichText(content, text);
+  }
+
+  messageDiv.appendChild(label);
+  messageDiv.appendChild(content);
+  chatMessages.appendChild(messageDiv);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return content;
+}
+
+async function sendChatMessage() {
+  const message = chatInput.value.trim();
+  if (!message) {
+    return;
+  }
+  abortActiveRequest();
+
+  try {
+    try {
+      await ensurePageContent();
+    } catch (error) {
+      // Chat can still work without page content.
+      pageContent = pageContent || { title: '', content: '' };
+    }
+
+    addChatMessage(message, 'user');
+    conversationHistory.push({ role: 'user', content: message });
+    chatInput.value = '';
+    chatLoadingIndicator.classList.remove('hidden');
+    cancelChatBtn.classList.remove('hidden');
+    sendBtn.disabled = true;
+    hideChatError();
+    showStatus('Thinking…');
+
+    const content = addChatMessage("I'm thinking...", 'assistant');
+
+    const handle = generateWithOllama(message, buildChatContext(), (fullText) => {
+      renderRichText(content, fullText);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+    activeRequest = handle;
+    const response = await handle.promise;
+    renderRichText(content, response);
+    conversationHistory.push({ role: 'assistant', content: response });
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    showStatus('Ready');
+  } catch (error) {
+    if (error && error.name === 'AbortError') {
+      showStatus('Stopped.');
+    } else {
+      showChatError(error.message || 'Could not get a reply.');
+      showStatus('Ready');
+    }
+  } finally {
+    activeRequest = null;
+    chatLoadingIndicator.classList.add('hidden');
+    cancelChatBtn.classList.add('hidden');
+    sendBtn.disabled = false;
+  }
+}
+
+async function loadInstalledModels() {
+  installedModelsList.replaceChildren();
+  const loading = document.createElement('div');
+  loading.className = 'loading-models';
+  loading.textContent = 'Loading...';
+  installedModelsList.appendChild(loading);
+
+  try {
+    const response = await sendMessage({ action: 'listModels' });
+    if (!response || !response.success) {
+      throw new Error(response && response.error ? response.error : 'Cannot connect to Ollama.');
+    }
+    const models = response.models || [];
+    installedModelsList.replaceChildren();
+    if (models.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'loading-models';
+      empty.textContent = 'No models installed yet';
+      installedModelsList.appendChild(empty);
+      updatePopularModelsStatus([]);
+      return;
+    }
+
+    models.forEach((model) => {
+      const row = document.createElement('div');
+      row.className = 'installed-model-item';
+
+      const info = document.createElement('div');
+      const name = document.createElement('span');
+      name.className = 'model-name';
+      name.textContent = model.name;
+      const size = document.createElement('span');
+      size.className = 'model-size';
+      size.textContent = formatSize(model.size);
+      info.appendChild(name);
+      info.appendChild(size);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'delete-btn';
+      del.textContent = 'Delete';
+      del.addEventListener('click', () => deleteModel(model.name));
+
+      row.appendChild(info);
+      row.appendChild(del);
+      installedModelsList.appendChild(row);
+    });
+    updatePopularModelsStatus(models.map((model) => model.name));
+  } catch (error) {
+    installedModelsList.replaceChildren();
+    const failed = document.createElement('div');
+    failed.className = 'loading-models';
+    failed.textContent = 'Cannot connect to Ollama';
+    installedModelsList.appendChild(failed);
+  }
+}
+
 function updatePopularModelsStatus(installedModelNames) {
-  document.querySelectorAll('.model-card').forEach(card => {
+  document.querySelectorAll('.model-card').forEach((card) => {
     const modelName = card.dataset.model;
     const button = card.querySelector('.install-btn');
-    
-    // Check if this model is installed (exact match or base name match)
-    const isInstalled = installedModelNames.some(installed => 
-      installed === modelName || 
-      installed === modelName + ':latest' ||
-      installed.split(':')[0] === modelName.split(':')[0]
+    const normalize = (name) => String(name || '').replace(/:latest$/, '');
+    const isInstalled = installedModelNames.some((installed) =>
+      installed === modelName || normalize(installed) === normalize(modelName)
     );
-    
     if (isInstalled) {
-      button.textContent = '✓ Installed';
-      button.style.background = '#10b981';
-      button.style.cursor = 'default';
+      button.textContent = 'Installed';
       button.disabled = true;
       button.classList.add('installed-btn');
     } else {
       button.textContent = 'Install';
-      button.style.background = '';
-      button.style.cursor = 'pointer';
       button.disabled = false;
       button.classList.remove('installed-btn');
     }
   });
 }
 
-// Format file size
-function formatSize(bytes) {
-  const gb = bytes / (1024 * 1024 * 1024);
-  if (gb >= 1) return gb.toFixed(1) + ' GB';
-  const mb = bytes / (1024 * 1024);
-  return mb.toFixed(0) + ' MB';
+async function deleteModel(modelName) {
+  if (!window.confirm(`Delete ${modelName}? This cannot be undone.`)) {
+    return;
+  }
+  try {
+    const response = await sendMessage({ action: 'deleteModel', model: modelName });
+    if (!response || !response.success) {
+      throw new Error(response && response.error ? response.error : `Failed to delete ${modelName}`);
+    }
+    showStatus(`${modelName} deleted`);
+    await loadAvailableModels();
+    await loadInstalledModels();
+  } catch (error) {
+    showStatus(error.message);
+  }
 }
 
-// Install model from card
-document.querySelectorAll('.model-card .install-btn').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    const modelName = e.target.closest('.model-card').dataset.model;
-    installModel(modelName, e.target);
+function pullModel(modelName, button, progressBar) {
+  const progressFill = progressBar.querySelector('.progress-fill');
+  const progressText = progressBar.querySelector('.progress-text');
+  button.textContent = 'Installing...';
+  button.classList.add('installing');
+  button.disabled = true;
+  progressBar.classList.remove('hidden');
+
+  const port = chrome.runtime.connect({ name: 'ollama-pull' });
+  const requestId = `pull-${Date.now()}`;
+
+  port.onMessage.addListener((message) => {
+    if (!message || message.requestId !== requestId) {
+      return;
+    }
+    if (message.type === 'progress' && message.data) {
+      const data = message.data;
+      if (data.total && data.completed) {
+        const percent = Math.min(100, Math.round((data.completed / data.total) * 100));
+        progressFill.style.width = `${percent}%`;
+        progressText.textContent = `${percent}%`;
+      } else if (data.status) {
+        progressText.textContent = String(data.status);
+      }
+      if (data.status === 'success') {
+        finish(true);
+      }
+    } else if (message.type === 'done') {
+      finish(true);
+    } else if (message.type === 'error') {
+      showStatus(message.error || 'Install failed');
+      finish(false);
+    } else if (message.type === 'aborted') {
+      finish(false);
+    }
+  });
+
+  let finished = false;
+  function finish(ok) {
+    if (finished) {
+      return;
+    }
+    finished = true;
+    try {
+      port.disconnect();
+    } catch (error) {
+      // Ignore.
+    }
+    if (ok) {
+      button.textContent = 'Installed';
+      button.classList.add('installed-btn');
+      showStatus(`${modelName} installed`);
+      setTimeout(() => {
+        loadAvailableModels();
+        loadInstalledModels();
+        button.classList.remove('installing');
+        progressBar.classList.add('hidden');
+        progressFill.style.width = '0%';
+        progressText.textContent = '0%';
+      }, 800);
+    } else {
+      button.textContent = 'Install';
+      button.classList.remove('installing');
+      button.disabled = false;
+      progressBar.classList.add('hidden');
+      progressFill.style.width = '0%';
+      progressText.textContent = '0%';
+    }
+  }
+
+  port.postMessage({ action: 'pull', requestId, model: modelName });
+}
+
+function installModel(modelName, button) {
+  const card = button.closest('.model-card') || button.closest('.custom-model-section');
+  const progressBar = card.querySelector('.progress-bar');
+  pullModel(modelName, button, progressBar);
+}
+
+function openModal() {
+  modalPreviousFocus = document.activeElement;
+  modelManagerModal.classList.remove('hidden');
+  closeModalBtn.focus();
+  loadInstalledModels();
+}
+
+function closeModal() {
+  modelManagerModal.classList.add('hidden');
+  if (modalPreviousFocus && typeof modalPreviousFocus.focus === 'function') {
+    modalPreviousFocus.focus();
+  }
+}
+
+function trapModalFocus(event) {
+  if (modelManagerModal.classList.contains('hidden') || event.key !== 'Tab') {
+    return;
+  }
+  const focusable = modelManagerModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  const items = Array.from(focusable).filter((el) => !el.disabled && el.offsetParent !== null);
+  if (!items.length) {
+    return;
+  }
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+async function saveOllamaUrl() {
+  const parsed = parseOllamaUrl(ollamaUrlInput.value);
+  if (!parsed) {
+    ollamaUrlInput.classList.add('invalid');
+    showStatus('URL must be http://localhost or http://127.0.0.1, with an optional port.');
+    return;
+  }
+  ollamaUrlInput.classList.remove('invalid');
+  ollamaUrlInput.value = parsed;
+  await chrome.storage.local.set({ ollamaUrl: parsed });
+  showStatus('Saved Ollama URL.');
+  await loadAvailableModels();
+}
+
+summarizeBtn.addEventListener('click', summarizePage);
+cancelSummaryBtn.addEventListener('click', () => {
+  abortActiveRequest();
+  showLoading(false);
+  showStatus('Stopped.');
+});
+sendBtn.addEventListener('click', sendChatMessage);
+cancelChatBtn.addEventListener('click', () => {
+  abortActiveRequest();
+  showStatus('Stopped.');
+});
+chatInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendChatMessage();
+  }
+});
+
+modelSelect.addEventListener('change', () => {
+  chrome.storage.local.set({ model: modelSelect.value });
+  showStatus(`Model changed to ${modelSelect.value}`);
+});
+
+themeSelect.addEventListener('change', () => {
+  const selectedTheme = themeSelect.value;
+  chrome.storage.local.set({ theme: selectedTheme });
+  applyTheme(selectedTheme);
+  showStatus('Theme changed.');
+});
+
+ollamaUrlInput.addEventListener('change', saveOllamaUrl);
+ollamaUrlInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    saveOllamaUrl();
+  }
+});
+
+manageModelsBtn.addEventListener('click', openModal);
+closeModalBtn.addEventListener('click', closeModal);
+modelManagerModal.addEventListener('click', (event) => {
+  if (event.target === modelManagerModal) {
+    closeModal();
+  }
+});
+modelManagerModal.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    closeModal();
+  }
+  trapModalFocus(event);
+});
+
+document.querySelectorAll('.model-card .install-btn').forEach((btn) => {
+  btn.addEventListener('click', (event) => {
+    const card = event.currentTarget.closest('.model-card');
+    installModel(card.dataset.model, event.currentTarget);
   });
 });
 
-// Install custom model
 installCustomBtn.addEventListener('click', () => {
   const modelName = customModelInput.value.trim();
   if (modelName) {
@@ -555,109 +658,10 @@ installCustomBtn.addEventListener('click', () => {
   }
 });
 
-// Install model function with progress
-async function installModel(modelName, button) {
-  const card = button.closest('.model-card') || button.closest('.custom-model-section');
-  const progressBar = card.querySelector('.progress-bar');
-  const progressFill = progressBar.querySelector('.progress-fill');
-  const progressText = progressBar.querySelector('.progress-text');
-  
-  button.textContent = 'Installing...';
-  button.classList.add('installing');
-  button.disabled = true;
-  progressBar.classList.remove('hidden');
-  
-  try {
-    const response = await fetch('http://localhost:11434/api/pull', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: modelName, stream: true })
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to start download');
-    }
-    
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n').filter(line => line.trim());
-      
-      for (const line of lines) {
-        try {
-          const data = JSON.parse(line);
-          
-          // Calculate progress
-          if (data.total && data.completed) {
-            const percent = Math.round((data.completed / data.total) * 100);
-            progressFill.style.width = percent + '%';
-            progressText.textContent = percent + '%';
-            button.textContent = `Installing ${percent}%`;
-          }
-          
-          // Check if complete
-          if (data.status === 'success' || data.status === 'complete') {
-            progressFill.style.width = '100%';
-            progressText.textContent = '100%';
-            showStatus(`✅ ${modelName} installed successfully!`);
-            button.textContent = '✓ Installed';
-            button.style.background = '#10b981';
-            
-            // Reload models in both places
-            setTimeout(() => {
-              loadAvailableModels();
-              loadInstalledModels();
-              button.textContent = 'Install';
-              button.classList.remove('installing');
-              button.disabled = false;
-              button.style.background = '';
-              progressBar.classList.add('hidden');
-              progressFill.style.width = '0%';
-              progressText.textContent = '0%';
-            }, 2000);
-            break;
-          }
-        } catch (e) {
-          // Skip invalid JSON lines
-        }
-      }
-    }
-  } catch (error) {
-    showStatus(`❌ Error: ${error.message}`);
-    button.textContent = 'Install';
-    button.classList.remove('installing');
-    button.disabled = false;
-    progressBar.classList.add('hidden');
-    progressFill.style.width = '0%';
-    progressText.textContent = '0%';
-  }
-}
-
-// Delete model function
-async function deleteModel(modelName) {
-  if (!confirm(`Delete ${modelName}? This cannot be undone.`)) return;
-  
-  try {
-    const response = await fetch('http://localhost:11434/api/delete', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: modelName })
-    });
-    
-    if (response.ok) {
-      showStatus(`✅ ${modelName} deleted`);
-      loadAvailableModels();
-      loadInstalledModels();
-    } else {
-      showStatus(`❌ Failed to delete ${modelName}`);
-    }
-  } catch (error) {
-    showStatus(`❌ Error: ${error.message}`);
-  }
-}
-
+(async function init() {
+  const settings = await getExtensionSettings();
+  themeSelect.value = settings.theme;
+  applyTheme(settings.theme);
+  ollamaUrlInput.value = settings.ollamaUrl;
+  await loadAvailableModels();
+})();

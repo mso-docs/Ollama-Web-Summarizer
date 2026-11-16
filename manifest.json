@@ -1,24 +1,30 @@
 {
   "manifest_version": 3,
   "name": "Ollama Web Summarizer",
-  "version": "1.0.0",
-  "description": "Summarize web content and chat about it using local Ollama",
+  "version": "1.0.1",
+  "description": "Summarize web pages and selected text with your local Ollama models, then chat about the content.",
+  "author": "Mackenzie O'Brien, Mac Labs AI",
+  "homepage_url": "https://github.com/mso-docs/Ollama-Web-Summarizer",
   "permissions": [
     "activeTab",
-    "scripting",
     "storage",
     "contextMenus"
   ],
   "host_permissions": [
-    "http://localhost:11434/*",
-    "http://127.0.0.1:11434/*"
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://127.0.0.1:* http://localhost:*; img-src 'self' data:; style-src 'self'; font-src 'self'"
+  },
   "action": {
     "default_popup": "src/popup.html",
+    "default_title": "Ollama Web Summarizer",
     "default_icon": {
-      "16": "icons/background-llama.png",
-      "48": "icons/background-llama.png",
-      "128": "icons/background-llama.png"
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
   },
   "background": {
@@ -26,14 +32,15 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["src/content.js"],
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["src/shared.js", "src/content.js"],
       "run_at": "document_idle"
     }
   ],
   "icons": {
-    "16": "icons/background-llama.png",
-    "48": "icons/background-llama.png",
-    "128": "icons/background-llama.png"
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   }
 }

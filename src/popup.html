@@ -10,95 +10,102 @@
   <div class="container">
     <header>
       <div class="header-content">
-        <img src="../icons/llama-chat.png" alt="Llama" class="header-icon">
+        <img src="../icons/llama-chat.png" alt="" class="header-icon" width="32" height="32">
         <h1>Ollama Summarizer</h1>
       </div>
       <div class="settings">
         <div class="setting-group">
-          <label for="modelSelect">Model:</label>
-          <select id="modelSelect">
+          <label for="modelSelect">Model</label>
+          <select id="modelSelect" aria-label="Ollama model">
             <option value="">Loading models...</option>
           </select>
-          <button id="manageModelsBtn" class="manage-models-btn" title="Manage Models">⚙️</button>
+          <button id="manageModelsBtn" class="manage-models-btn" type="button" title="Manage models" aria-haspopup="dialog" aria-controls="modelManagerModal">Manage</button>
         </div>
         <div class="setting-group">
-          <label for="themeSelect">Theme:</label>
-          <select id="themeSelect">
-            <option value="light">☀️ Light</option>
-            <option value="dark">🌙 Dark</option>
-            <option value="purple-light">🟣 Purple</option>
-            <option value="purple-dark">🟣 Purple Dark</option>
-            <option value="blue-light">🔵 Blue</option>
-            <option value="blue-dark">🔵 Blue Dark</option>
-            <option value="green-light">🟢 Green</option>
-            <option value="green-dark">🟢 Green Dark</option>
-            <option value="teal-light">🔷 Teal</option>
-            <option value="teal-dark">🔷 Teal Dark</option>
-            <option value="red-light">🔴 Red</option>
-            <option value="red-dark">🔴 Red Dark</option>
+          <label for="themeSelect">Theme</label>
+          <select id="themeSelect" aria-label="Color theme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="purple-light">Purple</option>
+            <option value="purple-dark">Purple Dark</option>
+            <option value="blue-light">Blue</option>
+            <option value="blue-dark">Blue Dark</option>
+            <option value="green-light">Green</option>
+            <option value="green-dark">Green Dark</option>
+            <option value="teal-light">Teal</option>
+            <option value="teal-dark">Teal Dark</option>
+            <option value="red-light">Red</option>
+            <option value="red-dark">Red Dark</option>
           </select>
+        </div>
+        <div class="setting-group url-group">
+          <label for="ollamaUrlInput">Ollama URL</label>
+          <input id="ollamaUrlInput" type="text" spellcheck="false" autocomplete="off" inputmode="url" placeholder="http://localhost:11434">
         </div>
       </div>
     </header>
 
     <main>
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="summary">📄 Summary</button>
-        <button class="tab-btn" data-tab="chat">💬 Chat</button>
+      <div class="tabs" role="tablist" aria-label="Summarizer views">
+        <button class="tab-btn active" data-tab="summary" type="button" role="tab" aria-selected="true" aria-controls="summaryTab" id="tab-summary">Summary</button>
+        <button class="tab-btn" data-tab="chat" type="button" role="tab" aria-selected="false" aria-controls="chatTab" id="tab-chat">Chat</button>
       </div>
 
-      <div class="tab-content active" id="summaryTab">
+      <div class="tab-content active" id="summaryTab" role="tabpanel" aria-labelledby="tab-summary">
         <div class="action-section">
-          <button id="summarizeBtn" class="primary-btn">📄 Summarize Page</button>
+          <button id="summarizeBtn" class="primary-btn" type="button">Summarize Page</button>
+          <button id="cancelSummaryBtn" class="secondary-btn hidden" type="button">Stop</button>
         </div>
 
         <div id="summarySection" class="hidden">
-          <div id="summaryContent" class="content-box"></div>
+          <div id="summaryContent" class="content-box" aria-live="polite"></div>
         </div>
 
-        <div id="loadingIndicator" class="loading hidden">
-          <div class="spinner"></div>
+        <div id="loadingIndicator" class="loading hidden" role="status">
+          <div class="spinner" aria-hidden="true"></div>
           <span>I'm thinking...</span>
         </div>
 
-        <div id="errorMessage" class="error hidden"></div>
+        <div id="errorMessage" class="error hidden" role="alert"></div>
       </div>
 
-      <div class="tab-content" id="chatTab">
+      <div class="tab-content" id="chatTab" role="tabpanel" aria-labelledby="tab-chat">
         <div id="chatSection">
-          <div id="chatMessages" class="chat-messages">
+          <div id="chatMessages" class="chat-messages" aria-live="polite">
             <div class="chat-welcome">
-              <div class="chat-welcome-icon">💬</div>
-              <h3>Chat with AI</h3>
-              <p>Ask questions about this page or anything else!</p>
+              <div class="chat-welcome-icon" aria-hidden="true">💬</div>
+              <h3>Chat with your local model</h3>
+              <p>Ask questions about this page. Your questions stay on this device.</p>
             </div>
           </div>
           <div class="chat-input-container">
+            <label for="chatInput" class="sr-only">Message</label>
             <input type="text" id="chatInput" placeholder="Ask anything about this page..." />
-            <button id="sendBtn" class="send-btn">Send</button>
+            <button id="sendBtn" class="send-btn" type="button">Send</button>
+            <button id="cancelChatBtn" class="secondary-btn hidden" type="button">Stop</button>
           </div>
         </div>
 
-        <div id="chatLoadingIndicator" class="loading hidden">
-          <div class="spinner"></div>
+        <div id="chatLoadingIndicator" class="loading hidden" role="status">
+          <div class="spinner" aria-hidden="true"></div>
           <span>I'm thinking...</span>
         </div>
 
-        <div id="chatErrorMessage" class="error hidden"></div>
+        <div id="chatErrorMessage" class="error hidden" role="alert"></div>
       </div>
     </main>
 
     <footer>
-      <p class="status" id="statusText">Ready</p>
+      <p class="status" id="statusText" role="status">Ready</p>
+      <p class="privacy-note">Page text and questions stay on this device and are sent only to your local Ollama server. Nothing is sent to a cloud API.</p>
     </footer>
   </div>
 
-  <!-- Model Manager Modal -->
-  <div id="modelManagerModal" class="modal hidden">
+  <div id="modelManagerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modelManagerTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>📦 Model Manager</h2>
-        <button id="closeModalBtn" class="close-btn">×</button>
+        <h2 id="modelManagerTitle">Model Manager</h2>
+        <button id="closeModalBtn" class="close-btn" type="button" aria-label="Close model manager">×</button>
       </div>
       <div class="modal-body">
         <div class="installed-models-section">
@@ -107,10 +114,10 @@
             <div class="loading-models">Loading...</div>
           </div>
         </div>
-        
+
         <div class="available-models-section">
           <h3>Popular Models</h3>
-          <p class="section-desc">Click to install a model</p>
+          <p class="section-desc">Click to install a model on this computer.</p>
           <div class="models-grid">
             <div class="model-card" data-model="llama3.2">
               <div class="model-info">
@@ -118,7 +125,7 @@
                 <span class="model-size">2GB</span>
               </div>
               <p>Fast, lightweight, great for most tasks</p>
-              <button class="install-btn">Install</button>
+              <button class="install-btn" type="button">Install</button>
               <div class="progress-bar hidden">
                 <div class="progress-fill"></div>
                 <span class="progress-text">0%</span>
@@ -130,7 +137,7 @@
                 <span class="model-size">1.3GB</span>
               </div>
               <p>Ultra-fast, smallest model</p>
-              <button class="install-btn">Install</button>
+              <button class="install-btn" type="button">Install</button>
               <div class="progress-bar hidden">
                 <div class="progress-fill"></div>
                 <span class="progress-text">0%</span>
@@ -142,7 +149,7 @@
                 <span class="model-size">2GB</span>
               </div>
               <p>Fast and accurate</p>
-              <button class="install-btn">Install</button>
+              <button class="install-btn" type="button">Install</button>
               <div class="progress-bar hidden">
                 <div class="progress-fill"></div>
                 <span class="progress-text">0%</span>
@@ -154,7 +161,7 @@
                 <span class="model-size">2.2GB</span>
               </div>
               <p>Microsoft model, very capable</p>
-              <button class="install-btn">Install</button>
+              <button class="install-btn" type="button">Install</button>
               <div class="progress-bar hidden">
                 <div class="progress-fill"></div>
                 <span class="progress-text">0%</span>
@@ -166,7 +173,7 @@
                 <span class="model-size">4.1GB</span>
               </div>
               <p>Balanced performance and quality</p>
-              <button class="install-btn">Install</button>
+              <button class="install-btn" type="button">Install</button>
               <div class="progress-bar hidden">
                 <div class="progress-fill"></div>
                 <span class="progress-text">0%</span>
@@ -178,7 +185,7 @@
                 <span class="model-size">1.6GB</span>
               </div>
               <p>Google model, compact and fast</p>
-              <button class="install-btn">Install</button>
+              <button class="install-btn" type="button">Install</button>
               <div class="progress-bar hidden">
                 <div class="progress-fill"></div>
                 <span class="progress-text">0%</span>
@@ -186,12 +193,13 @@
             </div>
           </div>
         </div>
-        
+
         <div class="custom-model-section">
           <h3>Install Custom Model</h3>
           <div class="custom-input-group">
+            <label for="customModelInput" class="sr-only">Custom model name</label>
             <input type="text" id="customModelInput" placeholder="e.g., deepseek-r1:8b">
-            <button id="installCustomBtn" class="install-btn">Install</button>
+            <button id="installCustomBtn" class="install-btn" type="button">Install</button>
           </div>
           <div id="customProgressBar" class="progress-bar hidden">
             <div class="progress-fill"></div>
@@ -202,6 +210,7 @@
     </div>
   </div>
 
+  <script src="shared.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

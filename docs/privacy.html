@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — Ollama Web Summarizer</title>
+  <style>
+    :root { --text: #1f2937; --muted: #4b5563; --bg: #f7f5f2; --card: #fff; --accent: #5b4fd6; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    h1, h2 { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; letter-spacing: -0.02em; }
+    h1 { font-size: 2rem; margin-bottom: 0.3rem; }
+    h2 { font-size: 1.2rem; margin-top: 2rem; }
+    p, li { color: var(--text); }
+    .meta { color: var(--muted); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 0.95rem; }
+    a { color: var(--accent); }
+    footer { margin-top: 3rem; color: var(--muted); font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Privacy Policy</h1>
+    <p class="meta">Ollama Web Summarizer · Last updated November 16, 2026<br>
+    Mackenzie O'Brien, Mac Labs AI</p>
+
+    <p>This policy describes how the Ollama Web Summarizer browser extension (“the extension”) handles information. The extension is made by Mackenzie O'Brien, Mac Labs AI. It is not an official Ollama product and is not affiliated with Ollama Inc.</p>
+
+    <h2>What the extension does</h2>
+    <p>The extension helps you summarize the webpage you are reading, or text you select, and chat about that content using a model that already runs on your computer through Ollama.</p>
+
+    <h2>What information is handled</h2>
+    <p>When you ask for a summary, an explanation, or a chat reply, the extension reads:</p>
+    <ul>
+      <li>Text from the current webpage, or the text you selected</li>
+      <li>The page title</li>
+      <li>The questions or prompts you type in the extension</li>
+    </ul>
+    <p>The current page’s URL is not sent to Ollama. The extension does not create an account, and it does not ask for your name, email address, payment information, or location.</p>
+    <p>The extension also stores three preferences on your device, in Chrome’s local storage: the Ollama model you selected, your theme, and the local Ollama URL (by default <code>http://localhost:11434</code>).</p>
+
+    <h2>How that information is used</h2>
+    <p>Page text, selected text, and your questions are sent only to the Ollama server running on your computer, over a loopback HTTP connection such as <code>http://localhost:11434</code> or <code>http://127.0.0.1</code> with a port you choose. This is a local, same-computer connection to a native app you install. The extension does not send that content to Mackenzie O'Brien, Mac Labs AI, to Ollama Inc., or to any other remote server.</p>
+    <p>Chat and summary text are kept in memory while the popup or on-page window is open. They are not written to disk by the extension. Preferences stay on your device until you change them, clear the extension’s data, or uninstall it.</p>
+
+    <h2>What is not collected</h2>
+    <p>The extension does not use analytics, advertising, or crash-reporting services. It does not sell, rent, or share user data with third parties. It does not transmit browsing history to the developer.</p>
+
+    <h2>Permissions</h2>
+    <p>The extension can read the current page so it can summarize or explain the text you asked it to handle. It uses local storage for your preferences, and it uses a context menu for selected text. It is allowed to contact only <code>http://localhost</code> and <code>http://127.0.0.1</code>, which is how it reaches Ollama on your computer.</p>
+
+    <h2>Your choices</h2>
+    <p>You can stop a running request with the Stop button. You can change or clear the saved Ollama URL, model, and theme in the popup. Uninstalling the extension, or clearing its data in the browser’s settings, removes the stored preferences. Models you installed through Ollama remain on your computer until you remove them in Ollama or in the extension’s model manager.</p>
+
+    <h2>Children</h2>
+    <p>The extension is not directed at children, and it does not knowingly collect personal information from children.</p>
+
+    <h2>Changes</h2>
+    <p>If this policy changes, the date at the top of this page will be updated. If the way the extension handles data changes, that will be described here.</p>
+
+    <h2>Contact</h2>
+    <p>Questions about this policy can be opened as an issue on the project repository: <a href="https://github.com/mso-docs/Ollama-Web-Summarizer">github.com/mso-docs/Ollama-Web-Summarizer</a>.</p>
+
+    <footer>
+      <p>Ollama is a trademark of its owner. This extension is an independent project and is not affiliated with, endorsed by, or sponsored by Ollama Inc.</p>
+    </footer>
+  </main>
+</body>
+</html>

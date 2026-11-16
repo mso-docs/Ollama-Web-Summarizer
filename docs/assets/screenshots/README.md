@@ -1,0 +1,1 @@
+These 1280×800 screenshots are drafts captured from the real extension running in Chrome, talking to a mock Ollama server on localhost:11434, not a live Ollama install. They are useful as layout references. For the Chrome Web Store listing, recapture the same flows against a real model if you can.
